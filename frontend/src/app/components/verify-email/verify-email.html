@@ -1,0 +1,61 @@
+<div class="min-h-[80vh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-md w-full">
+    <!-- Card Container -->
+    <div class="relative group">
+      <!-- Glow Effect -->
+      <div class="absolute -inset-0.5 bg-gradient-to-r from-red-600 to-red-700 rounded-2xl blur opacity-20 group-hover:opacity-30 dark:opacity-30 dark:group-hover:opacity-50 transition duration-300"></div>
+      
+      <!-- Main Card -->
+      <div class="relative bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-red-600/20 p-8 transition-colors duration-300">
+        <!-- Loading State -->
+        <div *ngIf="loading" class="text-center py-8">
+          <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-red-500/20 to-red-700/20 mb-4 animate-pulse">
+            <svg class="w-8 h-8 text-red-600 dark:text-red-500 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+            </svg>
+          </div>
+          <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-2">Verifying Email...</h2>
+          <p class="text-slate-600 dark:text-slate-400">Please wait while we verify your email address</p>
+        </div>
+
+        <!-- Success State -->
+        <div *ngIf="!loading && success" class="text-center py-8">
+          <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-emerald-500/20 to-emerald-700/20 mb-4">
+            <svg class="w-8 h-8 text-emerald-600 dark:text-emerald-500" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+            </svg>
+          </div>
+          <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-2">Email Verified!</h2>
+          <p class="text-slate-600 dark:text-slate-400 mb-6">{{ message }}</p>
+          <div class="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 rounded-lg p-4 mb-6">
+            <p class="text-sm text-emerald-700 dark:text-emerald-300">Redirecting to login page in a few seconds...</p>
+          </div>
+          <a routerLink="/login" class="inline-block py-2 px-6 text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 dark:hover:from-red-500 dark:hover:to-red-600 rounded-lg transition-all duration-200 shadow-lg shadow-red-500/25 hover:shadow-red-500/40">
+            Go to Login
+          </a>
+        </div>
+
+        <!-- Error State -->
+        <div *ngIf="!loading && error" class="text-center py-8">
+          <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-red-500/20 to-red-700/20 mb-4">
+            <svg class="w-8 h-8 text-red-600 dark:text-red-500" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+            </svg>
+          </div>
+          <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-2">Verification Failed</h2>
+          <div class="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-lg p-4 mb-6">
+            <p class="text-sm text-red-700 dark:text-red-300">{{ error }}</p>
+          </div>
+          <div class="space-y-3">
+            <a routerLink="/resend-verification" class="block py-2 px-6 text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 dark:hover:from-red-500 dark:hover:to-red-600 rounded-lg transition-all duration-200 shadow-lg shadow-red-500/25 hover:shadow-red-500/40">
+              Resend Verification Email
+            </a>
+            <a routerLink="/login" class="block py-2 px-6 text-sm font-medium text-red-600 dark:text-red-500 hover:text-red-700 dark:hover:text-red-400 border border-red-500 dark:border-red-600/50 hover:border-red-600 dark:hover:border-red-500/70 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-all duration-200">
+              Back to Login
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
