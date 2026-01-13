@@ -5,13 +5,21 @@
       <svg class="w-10 h-10 mr-3 text-red-600 dark:text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
       </svg>
-      Scoreboard
+      Team Scoreboard
     </h1>
-    <p class="text-slate-600 dark:text-slate-400 transition-colors duration-300">Top performers in the competition</p>
+    <p class="text-slate-600 dark:text-slate-400 transition-colors duration-300">Team rankings in the competition</p>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="flex justify-center items-center py-12">
+    <svg class="animate-spin h-12 w-12 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+    </svg>
   </div>
 
   <!-- Scoreboard Table -->
-  <div class="relative group">
+  <div *ngIf="!isLoading" class="relative group">
     <!-- Glow Effect -->
     <div class="absolute -inset-0.5 bg-gradient-to-r from-red-600 to-red-700 rounded-2xl blur opacity-10 group-hover:opacity-20 dark:opacity-20 dark:group-hover:opacity-30 transition duration-300"></div>
     
@@ -23,14 +31,15 @@
           <thead class="bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 transition-colors duration-300">
             <tr>
               <th class="px-6 py-4 text-left text-sm font-semibold text-red-700 dark:text-red-500 uppercase tracking-wider transition-colors duration-300">Rank</th>
-              <th class="px-6 py-4 text-left text-sm font-semibold text-red-700 dark:text-red-500 uppercase tracking-wider transition-colors duration-300">User</th>
+              <th class="px-6 py-4 text-left text-sm font-semibold text-red-700 dark:text-red-500 uppercase tracking-wider transition-colors duration-300">Team</th>
+              <th class="px-6 py-4 text-center text-sm font-semibold text-red-700 dark:text-red-500 uppercase tracking-wider transition-colors duration-300">Members</th>
               <th class="px-6 py-4 text-right text-sm font-semibold text-red-700 dark:text-red-500 uppercase tracking-wider transition-colors duration-300">Score</th>
             </tr>
           </thead>
           
           <!-- Table Body -->
           <tbody class="divide-y divide-slate-200 dark:divide-slate-700 transition-colors duration-300">
-            <tr *ngFor="let score of scores; let i = index" 
+            <tr *ngFor="let team of teams; let i = index" 
                 class="hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors duration-150"
                 [ngClass]="{
                   'bg-gradient-to-r from-yellow-100 to-transparent dark:from-yellow-500/10 dark:to-transparent': i === 0,
@@ -52,33 +61,46 @@
                 </div>
               </td>
               
-              <!-- Username Column -->
+              <!-- Team Name Column -->
               <td class="px-6 py-4">
                 <div class="flex items-center">
-                  <div class="w-10 h-10 rounded-full bg-gradient-to-br from-red-600 to-red-700 flex items-center justify-center text-white font-bold text-sm mr-3">
-                    {{score.username.charAt(0).toUpperCase()}}
+                  <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-red-600 to-red-700 flex items-center justify-center text-white font-bold text-sm mr-3">
+                    {{team.name.charAt(0).toUpperCase()}}
                   </div>
-                  <span class="text-slate-900 dark:text-white font-medium transition-colors duration-300">{{score.username}}</span>
+                  <div>
+                    <span class="text-slate-900 dark:text-white font-medium transition-colors duration-300 block">{{team.name}}</span>
+                    <span *ngIf="team.description" class="text-slate-500 dark:text-slate-400 text-sm">{{team.description | slice:0:50}}{{team.description.length > 50 ? '...' : ''}}</span>
+                  </div>
                 </div>
+              </td>
+              
+              <!-- Members Column -->
+              <td class="px-6 py-4 text-center">
+                <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-sm bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                  </svg>
+                  {{team.member_ids.length}}/4
+                </span>
               </td>
               
               <!-- Score Column -->
               <td class="px-6 py-4 text-right">
                 <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-red-100 dark:bg-red-500/10 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-600/20 transition-colors duration-300">
-                  {{score.score}} pts
+                  {{team.score}} pts
                 </span>
               </td>
             </tr>
             
             <!-- Empty State -->
-            <tr *ngIf="scores.length === 0">
-              <td colspan="3" class="px-6 py-12 text-center">
+            <tr *ngIf="teams.length === 0">
+              <td colspan="4" class="px-6 py-12 text-center">
                 <div class="flex flex-col items-center justify-center">
                   <svg class="w-16 h-16 text-slate-300 dark:text-slate-600 mb-4 transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
                   </svg>
-                  <p class="text-slate-600 dark:text-slate-400 text-lg transition-colors duration-300">No scores yet</p>
-                  <p class="text-slate-500 text-sm mt-1 transition-colors duration-300">Be the first to solve challenges!</p>
+                  <p class="text-slate-600 dark:text-slate-400 text-lg transition-colors duration-300">No teams yet</p>
+                  <p class="text-slate-500 text-sm mt-1 transition-colors duration-300">Create a team and start competing!</p>
                 </div>
               </td>
             </tr>

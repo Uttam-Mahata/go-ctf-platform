@@ -1,7 +1,6 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { AuthService } from './auth';
 
 @Injectable({
   providedIn: 'root'
@@ -9,26 +8,23 @@ import { AuthService } from './auth';
 export class ChallengeService {
   private apiUrl = 'http://localhost:8080';
 
-  constructor(private http: HttpClient, private authService: AuthService) { }
+  constructor(private http: HttpClient) { }
 
-  private getHeaders(): HttpHeaders {
-    const token = this.authService.getToken();
-    return new HttpHeaders().set('Authorization', `Bearer ${token}`);
-  }
+  // No need for manual headers - cookies are sent automatically via credentialsInterceptor
 
   getChallenges(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/challenges`, { headers: this.getHeaders() });
+    return this.http.get<any[]>(`${this.apiUrl}/challenges`);
   }
 
   getChallenge(id: string): Observable<any> {
-    return this.http.get<any>(`${this.apiUrl}/challenges/${id}`, { headers: this.getHeaders() });
+    return this.http.get<any>(`${this.apiUrl}/challenges/${id}`);
   }
 
   submitFlag(id: string, flag: string): Observable<any> {
-    return this.http.post<any>(`${this.apiUrl}/challenges/${id}/submit`, { flag }, { headers: this.getHeaders() });
+    return this.http.post<any>(`${this.apiUrl}/challenges/${id}/submit`, { flag });
   }
 
   createChallenge(challenge: any): Observable<any> {
-    return this.http.post<any>(`${this.apiUrl}/challenges`, challenge, { headers: this.getHeaders() });
+    return this.http.post<any>(`${this.apiUrl}/challenges`, challenge);
   }
 }

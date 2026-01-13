@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ScoreboardService } from '../../services/scoreboard';
+import { TeamService, Team } from '../../services/team';
 
 @Component({
   selector: 'app-scoreboard',
@@ -10,17 +10,27 @@ import { ScoreboardService } from '../../services/scoreboard';
   styleUrls: ['./scoreboard.scss']
 })
 export class ScoreboardComponent implements OnInit {
-  scores: any[] = [];
-  displayedColumns: string[] = ['rank', 'username', 'score'];
+  teams: Team[] = [];
+  isLoading = true;
 
-  constructor(private scoreboardService: ScoreboardService) { }
+  constructor(private teamService: TeamService) { }
 
   ngOnInit(): void {
-    this.scoreboardService.getScoreboard().subscribe({
-      next: (data) => {
-        this.scores = data.sort((a, b) => b.score - a.score);
+    this.loadTeamScoreboard();
+  }
+
+  loadTeamScoreboard(): void {
+    this.isLoading = true;
+    this.teamService.getTeamScoreboard().subscribe({
+      next: (response) => {
+        this.teams = response.teams || [];
+        this.isLoading = false;
       },
-      error: (err) => console.error(err)
+      error: (err) => {
+        console.error(err);
+        this.teams = [];
+        this.isLoading = false;
+      }
     });
   }
 }
