@@ -261,11 +261,19 @@ The production build will be stored in the `dist/` directory.
 
 ## 🛡️ Security Considerations
 
-- Always use strong JWT secrets in production
+- Always use strong JWT secrets in production (minimum 32 characters)
+  - Generate one using: `openssl rand -base64 32`
 - Never commit `.env` files to version control
 - Use HTTPS in production environments
 - Implement rate limiting for API endpoints
 - Regularly update dependencies for security patches
+- **IMPORTANT**: The sample data script creates a test admin user with default credentials (`testuser/password123`). These are for development only - never use in production!
+- Change all default passwords before deploying to production
+- Consider implementing:
+  - Password complexity requirements
+  - Account lockout after failed login attempts
+  - Email verification for new accounts
+  - Two-factor authentication (2FA)
 
 ## 🤝 Contributing
 
