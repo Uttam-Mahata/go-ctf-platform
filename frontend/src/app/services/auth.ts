@@ -14,9 +14,17 @@ export interface LoginData {
   password: string;
 }
 
+export interface UserInfo {
+  id: string;
+  username: string;
+  email: string;
+  role: string;
+}
+
 export interface AuthResponse {
-  token?: string;
   message: string;
+  user?: UserInfo;
+  authenticated?: boolean;
 }
 
 @Injectable({
@@ -24,22 +32,26 @@ export interface AuthResponse {
 })
 export class AuthService {
   private apiUrl = 'http://localhost:8080/auth';
-  private tokenKey = 'auth_token';
-  private isAuthenticatedSubject = new BehaviorSubject<boolean>(this.hasToken());
+  private isAuthenticatedSubject = new BehaviorSubject<boolean>(false);
+  private currentUserSubject = new BehaviorSubject<UserInfo | null>(null);
 
   isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
+  currentUser$ = this.currentUserSubject.asObservable();
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) {
+    // Check authentication status on init
+    this.checkAuthStatus();
+  }
 
   register(data: RegisterData): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.apiUrl}/register`, data);
+    return this.http.post<AuthResponse>(`${this.apiUrl}/register`, data, { withCredentials: true });
   }
 
   login(data: LoginData): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.apiUrl}/login`, data).pipe(
+    return this.http.post<AuthResponse>(`${this.apiUrl}/login`, data, { withCredentials: true }).pipe(
       tap(response => {
-        if (response.token) {
-          this.setToken(response.token);
+        if (response.user) {
+          this.currentUserSubject.next(response.user);
           this.isAuthenticatedSubject.next(true);
         }
       })
@@ -47,71 +59,77 @@ export class AuthService {
   }
 
   verifyEmail(token: string): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.apiUrl}/verify-email`, { token });
+    return this.http.post<AuthResponse>(`${this.apiUrl}/verify-email`, { token }, { withCredentials: true });
   }
 
   resendVerification(email: string): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.apiUrl}/resend-verification`, { email });
+    return this.http.post<AuthResponse>(`${this.apiUrl}/resend-verification`, { email }, { withCredentials: true });
   }
 
   forgotPassword(email: string): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.apiUrl}/forgot-password`, { email });
+    return this.http.post<AuthResponse>(`${this.apiUrl}/forgot-password`, { email }, { withCredentials: true });
   }
 
   resetPassword(token: string, newPassword: string): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.apiUrl}/reset-password`, {
       token,
       new_password: newPassword
-    });
+    }, { withCredentials: true });
   }
 
   changePassword(oldPassword: string, newPassword: string): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.apiUrl}/change-password`, {
       old_password: oldPassword,
       new_password: newPassword
-    });
+    }, { withCredentials: true });
   }
 
-  logout(): void {
-    localStorage.removeItem(this.tokenKey);
-    this.isAuthenticatedSubject.next(false);
+  logout(): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.apiUrl}/logout`, {}, { withCredentials: true }).pipe(
+      tap(() => {
+        this.currentUserSubject.next(null);
+        this.isAuthenticatedSubject.next(false);
+      })
+    );
   }
 
   isLoggedIn(): boolean {
-    return this.hasToken();
+    return this.isAuthenticatedSubject.value;
   }
 
-  getToken(): string | null {
-    return localStorage.getItem(this.tokenKey);
+  getCurrentUser(): UserInfo | null {
+    return this.currentUserSubject.value;
   }
 
-  private setToken(token: string): void {
-    localStorage.setItem(this.tokenKey, token);
-  }
-
-  private hasToken(): boolean {
-    return !!this.getToken();
-  }
-
-  getUserInfo(): any {
-    const token = this.getToken();
-    if (!token) return null;
-
-    try {
-      const payload = token.split('.')[1];
-      return JSON.parse(atob(payload));
-    } catch (e) {
-      return null;
-    }
+  getUserInfo(): UserInfo | null {
+    return this.currentUserSubject.value;
   }
 
   isAdmin(): boolean {
-    const userInfo = this.getUserInfo();
-    return userInfo && userInfo.role === 'admin';
+    const user = this.getCurrentUser();
+    return user !== null && user.role === 'admin';
   }
 
   getUserRole(): string | null {
-    const userInfo = this.getUserInfo();
-    return userInfo ? userInfo.role : null;
+    const user = this.getCurrentUser();
+    return user ? user.role : null;
+  }
+
+  checkAuthStatus(): void {
+    this.http.get<AuthResponse>(`${this.apiUrl}/me`, { withCredentials: true }).subscribe({
+      next: (response) => {
+        if (response.authenticated && response.user) {
+          this.currentUserSubject.next(response.user);
+          this.isAuthenticatedSubject.next(true);
+        } else {
+          this.currentUserSubject.next(null);
+          this.isAuthenticatedSubject.next(false);
+        }
+      },
+      error: () => {
+        this.currentUserSubject.next(null);
+        this.isAuthenticatedSubject.next(false);
+      }
+    });
   }
 }

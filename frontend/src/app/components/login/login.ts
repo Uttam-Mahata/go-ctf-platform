@@ -18,6 +18,7 @@ import { CommonModule } from '@angular/common';
 export class LoginComponent {
   loginForm: FormGroup;
   error = '';
+  isLoading = false;
 
   constructor(
     private fb: FormBuilder,
@@ -31,12 +32,17 @@ export class LoginComponent {
   }
 
   onSubmit(): void {
-    if (this.loginForm.valid) {
+    if (this.loginForm.valid && !this.isLoading) {
+      this.isLoading = true;
+      this.error = '';
+      
       this.authService.login(this.loginForm.value).subscribe({
         next: (response) => {
+          this.isLoading = false;
           this.router.navigate(['/challenges']);
         },
         error: (err) => {
+          this.isLoading = false;
           this.error = err.error?.error || 'Invalid credentials. Please check your email and password.';
         }
       });

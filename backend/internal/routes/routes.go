@@ -7,6 +7,7 @@ import (
 	"github.com/go-ctf-platform/backend/internal/middleware"
 	"github.com/go-ctf-platform/backend/internal/repositories"
 	"github.com/go-ctf-platform/backend/internal/services"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 func SetupRouter(cfg *config.Config) *gin.Engine {
@@ -20,7 +21,7 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 		}
 		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
-		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE")
 
 		if c.Request.Method == "OPTIONS" {
 			c.AbortWithStatus(204)
@@ -59,11 +60,11 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	// Public Routes - Scoreboard
 	r.GET("/scoreboard", scoreboardHandler.GetScoreboard)
 	
-	// Get current user info (requires auth)
+	// Get current user info (checks cookie)
 	r.GET("/auth/me", func(c *gin.Context) {
 		tokenString, err := c.Cookie("auth_token")
 		if err != nil || tokenString == "" {
-			c.JSON(401, gin.H{"error": "Not authenticated"})
+			c.JSON(401, gin.H{"authenticated": false})
 			return
 		}
 		
@@ -73,12 +74,13 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 		})
 		
 		if err != nil || !token.Valid {
-			c.JSON(401, gin.H{"error": "Invalid token"})
+			c.JSON(401, gin.H{"authenticated": false})
 			return
 		}
 		
 		claims, _ := token.Claims.(jwt.MapClaims)
 		c.JSON(200, gin.H{
+			"authenticated": true,
 			"user": gin.H{
 				"id":       claims["user_id"],
 				"username": claims["username"],
@@ -93,22 +95,7 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	protected.Use(middleware.AuthMiddleware(cfg))
 	{
 		// User Routes
-		protected.POST("/auth/logout", authHandler.Logout)
 		protected.POST("/auth/change-password", authHandler.ChangePassword)
-		protected.GET("/challenges", challengeHandler.GetAllChallenges)
-		protected.GET("/challenges/:id", challengeHandler.GetChallengeByID)
-		protected.POST("/challenges/:id/submit", challengeHandler.SubmitFlag)
-
-		// Admin Routes
-		admin := protected.Group("/")
-		admin.Use(middleware.AdminMiddleware())
-		{
-			admin.POST("/challenges", challengeHandler.CreateChallenge)
-		}
-	}
-
-	return r
-}
 		protected.GET("/challenges", challengeHandler.GetAllChallenges)
 		protected.GET("/challenges/:id", challengeHandler.GetChallengeByID)
 		protected.POST("/challenges/:id/submit", challengeHandler.SubmitFlag)

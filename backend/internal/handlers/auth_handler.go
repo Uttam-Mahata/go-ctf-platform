@@ -124,18 +124,18 @@ func (h *AuthHandler) Login(c *gin.Context) {
 
 	// Set HTTP-only cookie with JWT token
 	c.SetCookie(
-		"auth_token",           // name
-		token,                  // value
-		7*24*60*60,            // maxAge (7 days in seconds)
-		"/",                    // path
-		"",                     // domain (empty = current domain)
-		false,                  // secure (set to true in production with HTTPS)
-		true,                   // httpOnly
+		"auth_token", // name
+		token,        // value
+		7*24*60*60,   // maxAge (7 days in seconds)
+		"/",          // path
+		"",           // domain (empty = current domain)
+		false,        // secure (set to true in production with HTTPS)
+		true,         // httpOnly
 	)
 
 	c.JSON(http.StatusOK, gin.H{
-		"message":  "Login successful!",
-		"user":     userInfo,
+		"message": "Login successful!",
+		"user":    userInfo,
 	})
 }
 

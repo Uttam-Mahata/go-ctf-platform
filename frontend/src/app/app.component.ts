@@ -25,8 +25,9 @@ export class AppComponent {
   }
 
   logout(): void {
-    this.authService.logout();
-    window.location.reload();
+    this.authService.logout().subscribe(() => {
+      window.location.href = '/login';
+    });
   }
 
   toggleTheme(): void {
