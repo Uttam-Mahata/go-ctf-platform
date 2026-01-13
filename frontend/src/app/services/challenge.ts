@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 // Challenge interface for public view
 export interface Challenge {
@@ -57,7 +58,7 @@ export interface SubmitFlagResponse {
   providedIn: 'root'
 })
 export class ChallengeService {
-  private apiUrl = 'http://localhost:8080';
+  private apiUrl = environment.apiUrl;
 
   constructor(private http: HttpClient) { }
 
