@@ -17,8 +17,13 @@ export class ChallengeListComponent implements OnInit {
 
   ngOnInit(): void {
     this.challengeService.getChallenges().subscribe({
-      next: (data) => this.challenges = data,
-      error: (err) => console.error(err)
+      next: (data) => {
+        this.challenges = data || [];
+      },
+      error: (err) => {
+        console.error(err);
+        this.challenges = [];
+      }
     });
   }
 }

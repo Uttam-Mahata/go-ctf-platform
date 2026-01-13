@@ -94,15 +94,29 @@ func (h *ChallengeHandler) SubmitFlag(c *gin.Context) {
 		return
 	}
 
-	isCorrect, err := h.challengeService.SubmitFlag(userID, challengeID, req.Flag)
+	result, err := h.challengeService.SubmitFlag(userID, challengeID, req.Flag)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	if isCorrect {
-		c.JSON(http.StatusOK, gin.H{"message": "Flag correct!", "correct": true})
-	} else {
-		c.JSON(http.StatusOK, gin.H{"message": "Flag incorrect", "correct": false})
+	response := gin.H{
+		"correct":        result.IsCorrect,
+		"already_solved": result.AlreadySolved,
 	}
+
+	if result.IsCorrect {
+		response["message"] = "Flag correct!"
+		if result.Points > 0 {
+			response["points"] = result.Points
+		}
+		if result.TeamName != "" {
+			response["team_name"] = result.TeamName
+			response["message"] = "Flag correct! Points awarded to team " + result.TeamName
+		}
+	} else {
+		response["message"] = "Flag incorrect"
+	}
+
+	c.JSON(http.StatusOK, response)
 }

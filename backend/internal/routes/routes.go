@@ -7,6 +7,7 @@ import (
 	"github.com/go-ctf-platform/backend/internal/middleware"
 	"github.com/go-ctf-platform/backend/internal/repositories"
 	"github.com/go-ctf-platform/backend/internal/services"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 func SetupRouter(cfg *config.Config) *gin.Engine {
@@ -20,7 +21,7 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 		}
 		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
-		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE")
 
 		if c.Request.Method == "OPTIONS" {
 			c.AbortWithStatus(204)
@@ -34,17 +35,21 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	userRepo := repositories.NewUserRepository()
 	challengeRepo := repositories.NewChallengeRepository()
 	submissionRepo := repositories.NewSubmissionRepository()
+	teamRepo := repositories.NewTeamRepository()
+	teamInvitationRepo := repositories.NewTeamInvitationRepository()
 
 	// Services
 	emailService := services.NewEmailService(cfg)
 	authService := services.NewAuthService(userRepo, emailService, cfg)
-	challengeService := services.NewChallengeService(challengeRepo, submissionRepo)
+	challengeService := services.NewChallengeService(challengeRepo, submissionRepo, teamRepo)
 	scoreboardService := services.NewScoreboardService(userRepo, submissionRepo, challengeRepo)
+	teamService := services.NewTeamService(teamRepo, teamInvitationRepo, userRepo, emailService)
 
 	// Handlers
 	authHandler := handlers.NewAuthHandler(authService)
 	challengeHandler := handlers.NewChallengeHandler(challengeService)
 	scoreboardHandler := handlers.NewScoreboardHandler(scoreboardService)
+	teamHandler := handlers.NewTeamHandler(teamService)
 
 	// Public Routes - Authentication
 	r.POST("/auth/register", authHandler.Register)
@@ -56,29 +61,31 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	r.POST("/auth/forgot-password", authHandler.ForgotPassword)
 	r.POST("/auth/reset-password", authHandler.ResetPassword)
 
-	// Public Routes - Scoreboard
+	// Public Routes - Scoreboard (team scoreboard)
 	r.GET("/scoreboard", scoreboardHandler.GetScoreboard)
-	
-	// Get current user info (requires auth)
+	r.GET("/scoreboard/teams", teamHandler.GetTeamScoreboard)
+
+	// Get current user info (checks cookie)
 	r.GET("/auth/me", func(c *gin.Context) {
 		tokenString, err := c.Cookie("auth_token")
 		if err != nil || tokenString == "" {
-			c.JSON(401, gin.H{"error": "Not authenticated"})
+			c.JSON(401, gin.H{"authenticated": false})
 			return
 		}
-		
+
 		// Parse token to get user info
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 			return []byte(cfg.JWTSecret), nil
 		})
-		
+
 		if err != nil || !token.Valid {
-			c.JSON(401, gin.H{"error": "Invalid token"})
+			c.JSON(401, gin.H{"authenticated": false})
 			return
 		}
-		
+
 		claims, _ := token.Claims.(jwt.MapClaims)
 		c.JSON(200, gin.H{
+			"authenticated": true,
 			"user": gin.H{
 				"id":       claims["user_id"],
 				"username": claims["username"],
@@ -93,25 +100,42 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	protected.Use(middleware.AuthMiddleware(cfg))
 	{
 		// User Routes
-		protected.POST("/auth/logout", authHandler.Logout)
 		protected.POST("/auth/change-password", authHandler.ChangePassword)
 		protected.GET("/challenges", challengeHandler.GetAllChallenges)
 		protected.GET("/challenges/:id", challengeHandler.GetChallengeByID)
 		protected.POST("/challenges/:id/submit", challengeHandler.SubmitFlag)
 
-		// Admin Routes
-		admin := protected.Group("/")
-		admin.Use(middleware.AdminMiddleware())
+		// Team Routes
+		teams := protected.Group("/teams")
 		{
-			admin.POST("/challenges", challengeHandler.CreateChallenge)
-		}
-	}
+			// Team creation and viewing
+			teams.POST("", teamHandler.CreateTeam)
+			teams.GET("/my-team", teamHandler.GetMyTeam)
+			teams.GET("/:id", teamHandler.GetTeamDetails)
+			teams.PUT("/:id", teamHandler.UpdateTeam)
+			teams.DELETE("/:id", teamHandler.DeleteTeam)
 
-	return r
-}
-		protected.GET("/challenges", challengeHandler.GetAllChallenges)
-		protected.GET("/challenges/:id", challengeHandler.GetChallengeByID)
-		protected.POST("/challenges/:id/submit", challengeHandler.SubmitFlag)
+			// Invite code join
+			teams.POST("/join/:code", teamHandler.JoinByCode)
+
+			// Invitations (for invitee)
+			teams.GET("/invitations", teamHandler.GetPendingInvitations)
+			teams.POST("/invitations/:id/accept", teamHandler.AcceptInvitation)
+			teams.POST("/invitations/:id/reject", teamHandler.RejectInvitation)
+
+			// Team invitations (for leader)
+			teams.POST("/:id/invite/username", teamHandler.InviteByUsername)
+			teams.POST("/:id/invite/email", teamHandler.InviteByEmail)
+			teams.GET("/:id/invitations", teamHandler.GetTeamPendingInvitations)
+			teams.DELETE("/:id/invitations/:invitationId", teamHandler.CancelInvitation)
+
+			// Member management
+			teams.DELETE("/:id/members/:userId", teamHandler.RemoveMember)
+			teams.POST("/:id/leave", teamHandler.LeaveTeam)
+
+			// Invite code regeneration
+			teams.POST("/:id/regenerate-code", teamHandler.RegenerateInviteCode)
+		}
 
 		// Admin Routes
 		admin := protected.Group("/")

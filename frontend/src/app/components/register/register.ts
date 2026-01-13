@@ -18,8 +18,8 @@ import { CommonModule } from '@angular/common';
 export class RegisterComponent {
   registerForm: FormGroup;
   error = '';
-
   success = '';
+  isLoading = false;
 
   constructor(
     private fb: FormBuilder,
@@ -34,15 +34,19 @@ export class RegisterComponent {
   }
 
   onSubmit(): void {
-    if (this.registerForm.valid) {
+    if (this.registerForm.valid && !this.isLoading) {
+      this.isLoading = true;
       this.error = '';
       this.success = '';
+      
       this.authService.register(this.registerForm.value).subscribe({
         next: (response) => {
+          this.isLoading = false;
           this.success = response.message || 'Registration successful! Please check your email to verify your account.';
           this.registerForm.reset();
         },
         error: (err) => {
+          this.isLoading = false;
           this.error = err.error?.error || 'Registration failed. Please try again.';
         }
       });

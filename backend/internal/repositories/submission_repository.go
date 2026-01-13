@@ -46,6 +46,42 @@ func (r *SubmissionRepository) FindByChallengeAndUser(challengeID, userID primit
 	return &submission, nil
 }
 
+func (r *SubmissionRepository) FindByChallengeAndTeam(challengeID, teamID primitive.ObjectID) (*models.Submission, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	var submission models.Submission
+	err := r.collection.FindOne(ctx, bson.M{
+		"challenge_id": challengeID,
+		"team_id":      teamID,
+		"is_correct":   true,
+	}).Decode(&submission)
+	if err != nil {
+		return nil, err
+	}
+	return &submission, nil
+}
+
+func (r *SubmissionRepository) GetTeamSubmissions(teamID primitive.ObjectID) ([]models.Submission, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	cursor, err := r.collection.Find(ctx, bson.M{
+		"team_id":    teamID,
+		"is_correct": true,
+	})
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var submissions []models.Submission
+	if err = cursor.All(ctx, &submissions); err != nil {
+		return nil, err
+	}
+	return submissions, nil
+}
+
 func (r *SubmissionRepository) GetAllCorrectSubmissions() ([]models.Submission, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()

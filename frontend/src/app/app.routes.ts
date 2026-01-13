@@ -6,6 +6,10 @@ import { ChallengeDetailComponent } from './components/challenge-detail/challeng
 import { ScoreboardComponent } from './components/scoreboard/scoreboard';
 import { AdminDashboardComponent } from './components/admin-dashboard/admin-dashboard';
 import { VerifyEmailComponent } from './components/verify-email/verify-email';
+import { AccountSettingsComponent } from './components/account-settings/account-settings';
+import { ForgotPasswordComponent } from './components/forgot-password/forgot-password';
+import { ResetPasswordComponent } from './components/reset-password/reset-password';
+import { TeamDashboardComponent } from './components/team-dashboard/team-dashboard';
 import { inject } from '@angular/core';
 import { AuthService } from './services/auth';
 
@@ -30,6 +34,10 @@ export const routes: Routes = [
   { path: 'login', component: LoginComponent },
   { path: 'register', component: RegisterComponent },
   { path: 'verify-email', component: VerifyEmailComponent },
+  { path: 'forgot-password', component: ForgotPasswordComponent },
+  { path: 'reset-password', component: ResetPasswordComponent },
+  { path: 'settings', component: AccountSettingsComponent, canActivate: [authGuard] },
+  { path: 'team', component: TeamDashboardComponent, canActivate: [authGuard] },
   { path: 'challenges', component: ChallengeListComponent, canActivate: [authGuard] },
   { path: 'challenges/:id', component: ChallengeDetailComponent, canActivate: [authGuard] },
   { path: 'scoreboard', component: ScoreboardComponent },

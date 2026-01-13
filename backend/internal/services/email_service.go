@@ -182,3 +182,60 @@ func (s *EmailService) GetVerificationExpiry() time.Time {
 func (s *EmailService) GetResetPasswordExpiry() time.Time {
 	return time.Now().Add(1 * time.Hour)
 }
+
+// SendTeamInvitationEmail sends an email with team invitation link
+func (s *EmailService) SendTeamInvitationEmail(toEmail, teamName, inviterName, token string) error {
+	invitationURL := fmt.Sprintf("%s/team/invitations?token=%s", s.config.FrontendURL, token)
+
+	subject := fmt.Sprintf("You're invited to join team %s - RootAccess CTF", teamName)
+	body := fmt.Sprintf(`
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: 'Space Grotesk', Arial, sans-serif; background-color: #0f172a; color: #e2e8f0; margin: 0; padding: 0; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: linear-gradient(135deg, #dc2626 0%%, #991b1b 100%%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+        .header h1 { color: white; margin: 0; font-size: 28px; }
+        .content { background-color: #1e293b; padding: 40px; border-radius: 0 0 10px 10px; }
+        .button { display: inline-block; background: linear-gradient(135deg, #dc2626 0%%, #991b1b 100%%); color: white; text-decoration: none; padding: 15px 40px; border-radius: 8px; font-weight: bold; margin: 20px 0; }
+        .button:hover { background: linear-gradient(135deg, #991b1b 0%%, #7f1d1d 100%%); }
+        .footer { text-align: center; margin-top: 30px; color: #64748b; font-size: 14px; }
+        .team-name { color: #f87171; font-size: 24px; font-weight: bold; }
+        .info-box { background-color: #0f172a; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #dc2626; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>👥 Team Invitation</h1>
+        </div>
+        <div class="content">
+            <h2 style="color: #f87171;">You've been invited!</h2>
+            <p>Hi there,</p>
+            <p><strong>%s</strong> has invited you to join their team on RootAccess CTF:</p>
+            <div class="info-box">
+                <p class="team-name">%s</p>
+            </div>
+            <p>Join forces with your team to solve challenges, earn points, and climb the leaderboard together!</p>
+            <p style="text-align: center;">
+                <a href="%s" class="button">View Invitation</a>
+            </p>
+            <p style="color: #94a3b8; font-size: 14px; margin-top: 30px;">This invitation will expire in 7 days.</p>
+            <p style="color: #94a3b8; font-size: 14px;">If you don't have an account yet, you'll need to register first before you can join the team.</p>
+        </div>
+        <div class="footer">
+            <p>© 2026 RootAccess CTF Platform. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>
+	`, inviterName, teamName, invitationURL)
+
+	return s.sendEmail(toEmail, subject, body)
+}
+
+// GetTeamInvitationExpiry returns the expiration time for team invitation tokens
+func (s *EmailService) GetTeamInvitationExpiry() time.Time {
+	return time.Now().Add(7 * 24 * time.Hour) // 7 days
+}

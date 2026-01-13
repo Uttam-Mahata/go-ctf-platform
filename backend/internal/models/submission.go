@@ -9,6 +9,7 @@ import (
 type Submission struct {
 	ID          primitive.ObjectID `bson:"_id,omitempty" json:"id"`
 	UserID      primitive.ObjectID `bson:"user_id" json:"user_id"`
+	TeamID      primitive.ObjectID `bson:"team_id,omitempty" json:"team_id,omitempty"`
 	ChallengeID primitive.ObjectID `bson:"challenge_id" json:"challenge_id"`
 	Flag        string             `bson:"flag" json:"flag"`
 	IsCorrect   bool               `bson:"is_correct" json:"is_correct"`

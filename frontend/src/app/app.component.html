@@ -34,46 +34,61 @@
             <span class="relative z-10">Challenges</span>
             <div class="absolute inset-0 bg-primary-500/0 group-hover:bg-primary-500/10 rounded-lg transition-all duration-200"></div>
           </a>
+          <a routerLink="/team" 
+             *ngIf="isLoggedIn()"
+             class="relative px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-primary-600 dark:hover:text-primary-300 hover:bg-slate-100 dark:hover:bg-slate-800/50 rounded-lg transition-all duration-200 group flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+            </svg>
+            <span class="relative z-10">Team</span>
+            <div class="absolute inset-0 bg-primary-500/0 group-hover:bg-primary-500/10 rounded-lg transition-all duration-200"></div>
+          </a>
           <a routerLink="/admin" 
              *ngIf="isAdmin()"
-             class="relative px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-primary-600 dark:hover:text-primary-300 hover:bg-slate-100 dark:hover:bg-slate-800/50 rounded-lg transition-all duration-200 group">
-            <span class="relative z-10">🔑 Admin</span>
+             class="relative px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-primary-600 dark:hover:text-primary-300 hover:bg-slate-100 dark:hover:bg-slate-800/50 rounded-lg transition-all duration-200 group flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+            </svg>
+            <span class="relative z-10">Admin</span>
+            <div class="absolute inset-0 bg-primary-500/0 group-hover:bg-primary-500/10 rounded-lg transition-all duration-200"></div>
+          </a>
+          <a routerLink="/settings" 
+             *ngIf="isLoggedIn()"
+             class="relative px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-primary-600 dark:hover:text-primary-300 hover:bg-slate-100 dark:hover:bg-slate-800/50 rounded-lg transition-all duration-200 group flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+            </svg>
+            <span class="relative z-10">Settings</span>
             <div class="absolute inset-0 bg-primary-500/0 group-hover:bg-primary-500/10 rounded-lg transition-all duration-200"></div>
           </a>
 
-          <!-- Theme Toggle Button -->
-          <button 
-            (click)="toggleTheme()"
-            class="relative ml-2 p-2 text-slate-600 dark:text-slate-400 hover:text-primary-600 dark:hover:text-primary-300 hover:bg-slate-100 dark:hover:bg-slate-800/50 rounded-lg transition-all duration-200"
-            [attr.aria-label]="themeService.isDarkMode() ? 'Switch to light mode' : 'Switch to dark mode'">
-            <!-- Sun Icon (Light Mode) -->
-            <svg *ngIf="themeService.isDarkMode()" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
-            </svg>
-            <!-- Moon Icon (Dark Mode) -->
-            <svg *ngIf="!themeService.isDarkMode()" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
-            </svg>
-          </button>
-
           <!-- Auth Buttons -->
           <div class="flex items-center space-x-2 ml-4 pl-4 border-l border-slate-300 dark:border-slate-700/50">
-            <a routerLink="/login" 
-               *ngIf="!isLoggedIn()"
-               class="relative px-5 py-2 text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-red-700 dark:from-red-600 dark:to-red-700 hover:from-red-700 hover:to-red-800 dark:hover:from-red-500 dark:hover:to-red-600 rounded-lg transition-all duration-200 shadow-lg shadow-red-500/25 hover:shadow-red-500/40 hover:scale-105 overflow-hidden group">
-              <span class="relative z-10">Login</span>
-              <div class="absolute inset-0 bg-gradient-to-r from-red-700 to-red-600 opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
-            </a>
-            <a routerLink="/register" 
-               *ngIf="!isLoggedIn()"
-               class="relative px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 border border-red-500 dark:border-red-600/50 hover:border-red-600 dark:hover:border-red-500/70 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-all duration-200">
-              Register
-            </a>
-            <button (click)="logout()" 
-                    *ngIf="isLoggedIn()"
-                    class="px-5 py-2 text-sm font-semibold text-white bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-400 hover:to-orange-400 rounded-lg transition-all duration-200 shadow-lg shadow-red-500/25 hover:shadow-red-500/40 hover:scale-105">
-              Logout
-            </button>
+            <!-- Signed Out State -->
+            <div *ngIf="!isLoggedIn()" class="flex items-center space-x-2">
+              <span class="text-sm text-slate-600 dark:text-slate-400 mr-2 hidden sm:block">Welcome, Guest!</span>
+              <a routerLink="/login" 
+                 class="relative px-5 py-2 text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-red-700 dark:from-red-600 dark:to-red-700 hover:from-red-700 hover:to-red-800 dark:hover:from-red-500 dark:hover:to-red-600 rounded-lg transition-all duration-200 shadow-lg shadow-red-500/25 hover:shadow-red-500/40 hover:scale-105 overflow-hidden group">
+                <span class="relative z-10">Login</span>
+                <div class="absolute inset-0 bg-gradient-to-r from-red-700 to-red-600 opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+              </a>
+              <a routerLink="/register" 
+                 class="relative px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 border border-red-500 dark:border-red-600/50 hover:border-red-600 dark:hover:border-red-500/70 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-all duration-200">
+                Register
+              </a>
+            </div>
+            
+            <!-- Signed In State -->
+            <div *ngIf="isLoggedIn()" class="flex items-center space-x-2">
+              <span class="text-sm text-slate-600 dark:text-slate-400 mr-2 hidden sm:block">
+                Welcome, <span class="font-semibold text-red-600 dark:text-red-400">{{ authService.getCurrentUser()?.username }}</span>!
+              </span>
+              <button (click)="logout()" 
+                      class="px-5 py-2 text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 dark:from-red-600 dark:to-red-700 dark:hover:from-red-500 dark:hover:to-red-600 rounded-lg transition-all duration-200 shadow-lg shadow-red-500/25 hover:shadow-red-500/40 hover:scale-105">
+                Logout
+              </button>
+            </div>
           </div>
         </div>
       </div>
