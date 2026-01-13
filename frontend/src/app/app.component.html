@@ -35,9 +35,9 @@
             <div class="absolute inset-0 bg-primary-500/0 group-hover:bg-primary-500/10 rounded-lg transition-all duration-200"></div>
           </a>
           <a routerLink="/admin" 
-             *ngIf="isLoggedIn()"
+             *ngIf="isAdmin()"
              class="relative px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-primary-600 dark:hover:text-primary-300 hover:bg-slate-100 dark:hover:bg-slate-800/50 rounded-lg transition-all duration-200 group">
-            <span class="relative z-10">Admin</span>
+            <span class="relative z-10">🔑 Admin</span>
             <div class="absolute inset-0 bg-primary-500/0 group-hover:bg-primary-500/10 rounded-lg transition-all duration-200"></div>
           </a>
 

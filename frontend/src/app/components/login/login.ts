@@ -33,11 +33,11 @@ export class LoginComponent {
   onSubmit(): void {
     if (this.loginForm.valid) {
       this.authService.login(this.loginForm.value).subscribe({
-        next: () => {
+        next: (response) => {
           this.router.navigate(['/challenges']);
         },
         error: (err) => {
-          this.error = 'Invalid credentials';
+          this.error = err.error?.error || 'Invalid credentials. Please check your email and password.';
         }
       });
     }

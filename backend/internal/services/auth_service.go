@@ -12,58 +12,254 @@ import (
 )
 
 type AuthService struct {
-	userRepo *repositories.UserRepository
-	config   *config.Config
+	userRepo     *repositories.UserRepository
+	emailService *EmailService
+	config       *config.Config
 }
 
-func NewAuthService(userRepo *repositories.UserRepository, cfg *config.Config) *AuthService {
+func NewAuthService(userRepo *repositories.UserRepository, emailService *EmailService, cfg *config.Config) *AuthService {
 	return &AuthService{
-		userRepo: userRepo,
-		config:   cfg,
+		userRepo:     userRepo,
+		emailService: emailService,
+		config:       cfg,
 	}
 }
 
-func (s *AuthService) Register(username, password string) error {
+// Register creates a new user account with email verification
+func (s *AuthService) Register(username, email, password string) error {
+	// Validate email format and domain
+	if err := s.emailService.ValidateEmail(email); err != nil {
+		return err
+	}
+
+	// Check if username already exists
 	existingUser, _ := s.userRepo.FindByUsername(username)
 	if existingUser != nil {
 		return errors.New("username already exists")
 	}
 
+	// Check if email already exists
+	existingEmail, _ := s.userRepo.FindByEmail(email)
+	if existingEmail != nil {
+		return errors.New("email already registered")
+	}
+
+	// Hash password
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return err
 	}
 
-	user := &models.User{
-		Username:     username,
-		PasswordHash: string(hashedPassword),
-		Role:         "user",
+	// Generate verification token
+	token, err := s.emailService.GenerateVerificationToken()
+	if err != nil {
+		return err
 	}
 
-	return s.userRepo.CreateUser(user)
+	// Create user
+	user := &models.User{
+		Username:           username,
+		Email:              email,
+		PasswordHash:       string(hashedPassword),
+		Role:               "user",
+		EmailVerified:      false,
+		VerificationToken:  token,
+		VerificationExpiry: s.emailService.GetVerificationExpiry(),
+		CreatedAt:          time.Now(),
+		UpdatedAt:          time.Now(),
+	}
+
+	if err := s.userRepo.CreateUser(user); err != nil {
+		return err
+	}
+
+	// Send verification email
+	if err := s.emailService.SendVerificationEmail(email, username, token); err != nil {
+		// Log error but don't fail registration
+		// User can request a new verification email later
+		return errors.New("account created but failed to send verification email - please request a new one")
+	}
+
+	return nil
 }
 
-func (s *AuthService) Login(username, password string) (string, error) {
-	user, err := s.userRepo.FindByUsername(username)
+// VerifyEmail verifies a user's email using the verification token
+func (s *AuthService) VerifyEmail(token string) error {
+	user, err := s.userRepo.FindByVerificationToken(token)
 	if err != nil {
-		return "", errors.New("invalid credentials")
+		return errors.New("invalid or expired verification token")
 	}
 
+	if user.EmailVerified {
+		return errors.New("email already verified")
+	}
+
+	if time.Now().After(user.VerificationExpiry) {
+		return errors.New("verification token has expired")
+	}
+
+	// Mark email as verified
+	user.EmailVerified = true
+	user.VerificationToken = ""
+	user.UpdatedAt = time.Now()
+
+	return s.userRepo.UpdateUser(user)
+}
+
+// ResendVerificationEmail sends a new verification email
+func (s *AuthService) ResendVerificationEmail(email string) error {
+	user, err := s.userRepo.FindByEmail(email)
+	if err != nil {
+		return errors.New("email not found")
+	}
+
+	if user.EmailVerified {
+		return errors.New("email already verified")
+	}
+
+	// Generate new token
+	token, err := s.emailService.GenerateVerificationToken()
+	if err != nil {
+		return err
+	}
+
+	user.VerificationToken = token
+	user.VerificationExpiry = s.emailService.GetVerificationExpiry()
+	user.UpdatedAt = time.Now()
+
+	if err := s.userRepo.UpdateUser(user); err != nil {
+		return err
+	}
+
+	return s.emailService.SendVerificationEmail(user.Email, user.Username, token)
+}
+
+// UserInfo contains basic user information returned on login
+type UserInfo struct {
+	ID       string `json:"id"`
+	Username string `json:"username"`
+	Email    string `json:"email"`
+	Role     string `json:"role"`
+}
+
+// Login authenticates a user and returns a JWT token and user info
+func (s *AuthService) Login(usernameOrEmail, password string) (string, *UserInfo, error) {
+	// Try to find by username first
+	user, err := s.userRepo.FindByUsername(usernameOrEmail)
+	if err != nil {
+		// Try to find by email
+		user, err = s.userRepo.FindByEmail(usernameOrEmail)
+		if err != nil {
+			return "", nil, errors.New("invalid credentials")
+		}
+	}
+
+	// Check if email is verified
+	if !user.EmailVerified {
+		return "", nil, errors.New("please verify your email before logging in")
+	}
+
+	// Verify password
 	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
 	if err != nil {
-		return "", errors.New("invalid credentials")
+		return "", nil, errors.New("invalid credentials")
 	}
 
+	// Generate JWT token
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"user_id": user.ID.Hex(),
-		"role":    user.Role,
-		"exp":     time.Now().Add(time.Hour * 24).Unix(),
+		"user_id":  user.ID.Hex(),
+		"username": user.Username,
+		"email":    user.Email,
+		"role":     user.Role,
+		"exp":      time.Now().Add(time.Hour * 24 * 7).Unix(), // 7 days
 	})
 
 	tokenString, err := token.SignedString([]byte(s.config.JWTSecret))
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 
-	return tokenString, nil
+	// Create user info response
+	userInfo := &UserInfo{
+		ID:       user.ID.Hex(),
+		Username: user.Username,
+		Email:    user.Email,
+		Role:     user.Role,
+	}
+
+	return tokenString, userInfo, nil
+}
+
+// RequestPasswordReset sends a password reset email
+func (s *AuthService) RequestPasswordReset(email string) error {
+	user, err := s.userRepo.FindByEmail(email)
+	if err != nil {
+		// Don't reveal if email exists or not for security
+		return nil
+	}
+
+	// Generate reset token
+	token, err := s.emailService.GenerateVerificationToken()
+	if err != nil {
+		return err
+	}
+
+	user.ResetPasswordToken = token
+	user.ResetPasswordExpiry = s.emailService.GetResetPasswordExpiry()
+	user.UpdatedAt = time.Now()
+
+	if err := s.userRepo.UpdateUser(user); err != nil {
+		return err
+	}
+
+	return s.emailService.SendPasswordResetEmail(user.Email, user.Username, token)
+}
+
+// ResetPassword resets a user's password using the reset token
+func (s *AuthService) ResetPassword(token, newPassword string) error {
+	user, err := s.userRepo.FindByResetToken(token)
+	if err != nil {
+		return errors.New("invalid or expired reset token")
+	}
+
+	if time.Now().After(user.ResetPasswordExpiry) {
+		return errors.New("reset token has expired")
+	}
+
+	// Hash new password
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+
+	user.PasswordHash = string(hashedPassword)
+	user.ResetPasswordToken = ""
+	user.UpdatedAt = time.Now()
+
+	return s.userRepo.UpdateUser(user)
+}
+
+// ChangePassword allows a logged-in user to change their password
+func (s *AuthService) ChangePassword(userID, oldPassword, newPassword string) error {
+	user, err := s.userRepo.FindByID(userID)
+	if err != nil {
+		return errors.New("user not found")
+	}
+
+	// Verify old password
+	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(oldPassword))
+	if err != nil {
+		return errors.New("current password is incorrect")
+	}
+
+	// Hash new password
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+
+	user.PasswordHash = string(hashedPassword)
+	user.UpdatedAt = time.Now()
+
+	return s.userRepo.UpdateUser(user)
 }
