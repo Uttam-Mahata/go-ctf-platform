@@ -210,7 +210,6 @@ type RegisterRequest struct {
 Admins can ONLY be created through:
 1. This CLI tool
 2. Direct database manipulation
-3. Manual database seeding scripts
 
 There is NO API endpoint that allows admin creation.
 
