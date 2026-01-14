@@ -1,11 +1,13 @@
 package services
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
 	"time"
 
+	"github.com/go-ctf-platform/backend/internal/database"
 	"github.com/go-ctf-platform/backend/internal/models"
 	"github.com/go-ctf-platform/backend/internal/repositories"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -35,6 +37,14 @@ func NewTeamService(
 		emailService:   emailService,
 		submissionRepo: submissionRepo,
 		challengeRepo:  challengeRepo,
+	}
+}
+
+func (s *TeamService) invalidateScoreboardCache() {
+	if database.RDB != nil {
+		ctx := context.Background()
+		database.RDB.Del(ctx, "scoreboard")
+		database.RDB.Del(ctx, "team_scoreboard")
 	}
 }
 
@@ -178,6 +188,7 @@ func (s *TeamService) UpdateTeam(teamID, leaderID, name, description string) (*m
 		return nil, err
 	}
 
+	s.invalidateScoreboardCache()
 	return team, nil
 }
 
@@ -368,6 +379,8 @@ func (s *TeamService) JoinByInviteCode(userID, inviteCode string) (*models.Team,
 		return nil, err
 	}
 
+	s.invalidateScoreboardCache()
+
 	// Refresh team data
 	return s.teamRepo.FindTeamByID(team.ID.Hex())
 }
@@ -436,6 +449,8 @@ func (s *TeamService) AcceptInvitation(invitationID, userID string) (*models.Tea
 		return nil, err
 	}
 
+	s.invalidateScoreboardCache()
+
 	// Refresh team data
 	return s.teamRepo.FindTeamByID(invitation.TeamID.Hex())
 }
@@ -500,7 +515,11 @@ func (s *TeamService) RemoveMember(teamID, leaderID, memberID string) error {
 		return errors.New("user is not a member of this team")
 	}
 
-	return s.teamRepo.RemoveMemberFromTeam(teamID, memberID)
+	err = s.teamRepo.RemoveMemberFromTeam(teamID, memberID)
+	if err == nil {
+		s.invalidateScoreboardCache()
+	}
+	return err
 }
 
 // LeaveTeam allows a member to leave the team
@@ -536,7 +555,11 @@ func (s *TeamService) LeaveTeam(teamID, userID string) error {
 		return errors.New("you are not a member of this team")
 	}
 
-	return s.teamRepo.RemoveMemberFromTeam(teamID, userID)
+	err = s.teamRepo.RemoveMemberFromTeam(teamID, userID)
+	if err == nil {
+		s.invalidateScoreboardCache()
+	}
+	return err
 }
 
 // RegenerateInviteCode generates a new invite code for the team

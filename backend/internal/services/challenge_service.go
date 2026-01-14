@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"log"
 
 	"github.com/go-ctf-platform/backend/internal/database"
 	"github.com/go-ctf-platform/backend/internal/models"
@@ -143,6 +142,9 @@ func (s *ChallengeService) SubmitFlag(userID primitive.ObjectID, challengeID str
 		}
 
 		if isCorrect {
+			// Invalidate cache since scoreboard will change (at least individual)
+			s.invalidateScoreboardCache()
+
 			// If team hasn't solved it before, increment solve count and award points
 			if !teamAlreadySolved {
 				// Increment global solve count (unique teams/individuals)
@@ -158,7 +160,6 @@ func (s *ChallengeService) SubmitFlag(userID primitive.ObjectID, challengeID str
 				
 				// Award points to team
 				s.teamRepo.UpdateTeamScore(team.ID.Hex(), points)
-				s.invalidateScoreboardCache()
 				
 				result.Message = "Flag correct! Points awarded to team " + team.Name
 			} else {

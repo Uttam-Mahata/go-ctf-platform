@@ -3,7 +3,6 @@ package services
 import (
 	"context"
 	"encoding/json"
-	"log"
 	"sort"
 	"time"
 
@@ -21,6 +20,7 @@ type ScoreboardService struct {
 type UserScore struct {
 	Username string `json:"username"`
 	Score    int    `json:"score"`
+	TeamName string `json:"team_name,omitempty"`
 }
 
 type TeamScore struct {
@@ -99,6 +99,17 @@ func (s *ScoreboardService) GetScoreboard() ([]UserScore, error) {
 		userMap[u.ID.Hex()] = u.Username
 	}
 
+	// Map user IDs to Team names
+	userTeamMap := make(map[string]string)
+	teams, err := s.teamRepo.GetAllTeamsWithScores()
+	if err == nil {
+		for _, team := range teams {
+			for _, mid := range team.MemberIDs {
+				userTeamMap[mid.Hex()] = team.Name
+			}
+		}
+	}
+
 	var scores []UserScore
 	for uid, score := range userScores {
 		username, exists := userMap[uid]
@@ -108,6 +119,7 @@ func (s *ScoreboardService) GetScoreboard() ([]UserScore, error) {
 		scores = append(scores, UserScore{
 			Username: username,
 			Score:    score,
+			TeamName: userTeamMap[uid],
 		})
 	}
 
