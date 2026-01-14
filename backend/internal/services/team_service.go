@@ -107,9 +107,17 @@ func (s *TeamService) calculateTeamScore(teamID primitive.ObjectID) int {
 	}
 
 	totalScore := 0
+	seenChallenges := make(map[string]bool)
+
 	for _, sub := range submissions {
+		challengeID := sub.ChallengeID.Hex()
+		if seenChallenges[challengeID] {
+			continue
+		}
+		seenChallenges[challengeID] = true
+
 		// Get current challenge state (with up-to-date solve count)
-		challenge, err := s.challengeRepo.GetChallengeByID(sub.ChallengeID.Hex())
+		challenge, err := s.challengeRepo.GetChallengeByID(challengeID)
 		if err == nil {
 			// Add the CURRENT (decayed) value of the challenge
 			totalScore += challenge.CurrentPoints()
