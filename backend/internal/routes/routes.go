@@ -46,7 +46,7 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	authService := services.NewAuthService(userRepo, emailService, cfg)
 	challengeService := services.NewChallengeService(challengeRepo, submissionRepo, teamRepo)
 	scoreboardService := services.NewScoreboardService(userRepo, submissionRepo, challengeRepo)
-	teamService := services.NewTeamService(teamRepo, teamInvitationRepo, userRepo, emailService)
+	teamService := services.NewTeamService(teamRepo, teamInvitationRepo, userRepo, emailService, submissionRepo, challengeRepo)
 	notificationService := services.NewNotificationService(notificationRepo)
 
 	// Handlers

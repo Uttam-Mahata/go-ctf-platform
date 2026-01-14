@@ -16,6 +16,8 @@ type TeamService struct {
 	invitationRepo *repositories.TeamInvitationRepository
 	userRepo       *repositories.UserRepository
 	emailService   *EmailService
+	submissionRepo *repositories.SubmissionRepository
+	challengeRepo  *repositories.ChallengeRepository
 }
 
 func NewTeamService(
@@ -23,12 +25,16 @@ func NewTeamService(
 	invitationRepo *repositories.TeamInvitationRepository,
 	userRepo *repositories.UserRepository,
 	emailService *EmailService,
+	submissionRepo *repositories.SubmissionRepository,
+	challengeRepo *repositories.ChallengeRepository,
 ) *TeamService {
 	return &TeamService{
 		teamRepo:       teamRepo,
 		invitationRepo: invitationRepo,
 		userRepo:       userRepo,
 		emailService:   emailService,
+		submissionRepo: submissionRepo,
+		challengeRepo:  challengeRepo,
 	}
 }
 
@@ -92,14 +98,50 @@ func (s *TeamService) CreateTeam(leaderID, name, description string) (*models.Te
 	return team, nil
 }
 
-// GetTeamByID returns a team by its ID
-func (s *TeamService) GetTeamByID(teamID string) (*models.Team, error) {
-	return s.teamRepo.FindTeamByID(teamID)
+// Helper to calculate real-time dynamic score for a team
+func (s *TeamService) calculateTeamScore(teamID primitive.ObjectID) int {
+	// Get all correct submissions for the team
+	submissions, err := s.submissionRepo.GetTeamSubmissions(teamID)
+	if err != nil {
+		return 0
+	}
+
+	totalScore := 0
+	for _, sub := range submissions {
+		// Get current challenge state (with up-to-date solve count)
+		challenge, err := s.challengeRepo.GetChallengeByID(sub.ChallengeID.Hex())
+		if err == nil {
+			// Add the CURRENT (decayed) value of the challenge
+			totalScore += challenge.CurrentPoints()
+		}
+	}
+	return totalScore
 }
 
-// GetUserTeam returns the team that a user belongs to
+// GetTeamByID returns a team by its ID with dynamic score
+func (s *TeamService) GetTeamByID(teamID string) (*models.Team, error) {
+	team, err := s.teamRepo.FindTeamByID(teamID)
+	if err != nil {
+		return nil, err
+	}
+	
+	// Recalculate score dynamically
+	team.Score = s.calculateTeamScore(team.ID)
+	
+	return team, nil
+}
+
+// GetUserTeam returns the team that a user belongs to with dynamic score
 func (s *TeamService) GetUserTeam(userID string) (*models.Team, error) {
-	return s.teamRepo.FindTeamByMemberID(userID)
+	team, err := s.teamRepo.FindTeamByMemberID(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Recalculate score dynamically
+	team.Score = s.calculateTeamScore(team.ID)
+
+	return team, nil
 }
 
 // UpdateTeam updates team name and description (leader only)
